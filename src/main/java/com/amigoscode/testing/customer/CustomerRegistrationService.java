@@ -21,7 +21,8 @@ public class CustomerRegistrationService {
         // 2. if taken lets check if belongs to same customer
             //2.1 if yes return
             //2.2 otherwise throw exception
-        //3. save customer
+        //3. save customer.
+
         // we will keep it simple and just compare the names of the customers, but in real life would need more unique attributes
 
         String phoneNumber=request.getCustomer().getPhoneNumber();
