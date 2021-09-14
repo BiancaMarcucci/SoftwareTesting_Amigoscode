@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import static net.bytebuddy.matcher.ElementMatchers.any;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -64,13 +65,40 @@ class CustomerRegistrationServiceTest {
         //... a request
         CustomerRegistrationRequest request=new CustomerRegistrationRequest(customer);
 
-        // to make optional (inside mocked customerRepository) be empty, to later test if we can register a customer with new phone number
+        // to make optional (inside mocked customerRepository) be NOT empty, to later test if we can just RETURN
         given(customerRepository.selectCustomerByPhoneNumber(phoneNumber)).willReturn(Optional.of(customer));
 
         //WHEN
         underTest.registerNewCustomer(request);
 
         //THEN
+        then(customerRepository).should().selectCustomerByPhoneNumber(phoneNumber);
+        then(customerRepository).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    void itShouldThrowWhenPhoneNumberIsAlreadyTakenByOtherCustomer() {
+        //GIVEN a phone number and request
+        String phoneNumber = "000099";
+        UUID id=UUID.randomUUID();
+        Customer customer=new Customer(id,"Maryam",phoneNumber);
+        // creating another customer (with same phone numb)
+        Customer customerTwo=new Customer(id,"John",phoneNumber);
+
+        //... a request
+        CustomerRegistrationRequest request=new CustomerRegistrationRequest(customer);
+
+        //
+        given(customerRepository.selectCustomerByPhoneNumber(phoneNumber)).willReturn(Optional.of(customerTwo));
+
+        //WHEN
+        // &
+        //THEN
+        assertThatThrownBy(()-> underTest.registerNewCustomer(request))
+                .isInstanceOf(IllegalStateException.class)
+                        .hasMessageContaining(String.format("Phone number [%s] has already been taken", phoneNumber));
+
+        //FINALLY
         then(customerRepository).should().selectCustomerByPhoneNumber(phoneNumber);
         then(customerRepository).shouldHaveNoMoreInteractions();
     }
